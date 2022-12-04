@@ -11,9 +11,7 @@ class Node:
     
     def join(self, node):
         if node != None:
-            listOfServers = node.get_all_servers([], node, 0)
-            listOfServers.sort(key = lambda x: x.id)
-            self.successor = node.find_node_with_key(listOfServers, self.id)
+            self.successor = node.find_node_with_key(self.id)
             self.predecessor = self.successor.predecessor
             self.successor.predecessor = self
             self.predecessor.successor = self
@@ -26,22 +24,31 @@ class Node:
         listOfServers.append(self)
         self.successor.get_all_servers(listOfServers, origNode, count+1)
         return listOfServers
-    
-    def find_node_with_key(self, listOfServers, key):
-        key = key % 256
-        if key > listOfServers[-1].id:
-            return listOfServers[0]
-        start = 0
-        end = len(listOfServers)
-        while (start<=end):
-            mid = (start+end)//2
-            if key == listOfServers[mid].id:
-                return listOfServers[mid]
-            elif key < listOfServers[mid].id:
-                end = mid-1
-            elif key>listOfServers[mid].id:
-                start = mid+1
-        return listOfServers[start]
+
+    def find_node_with_key(self, key):
+        if key == self.id:
+            return self
+        elif self.predecessor == self == self.successor:
+            return self
+        elif (self.predecessor.id < key < self.id) or (self.predecessor.id > self.id and key < self.id):
+            return self
+        elif (self.predecessor.id > self.id and key > self.predecessor.id):
+            if self.predecessor == self.successor:
+                return self.successor
+            return self
+        if key < self.id:
+            offset = 256 - self.id + key
+        else:
+            offset = key - self.id
+        two_power_count = -1
+        while offset:
+            offset = offset//2
+            two_power_count += 1
+        key_node = self.fingerTable.get(two_power_count)
+        if key_node.predecessor.id > key and key_node.predecessor == self:
+            return key_node.predecessor
+        else:
+            return key_node.find_node_with_key(key)
     
     def updateFingerTable(self):
         listOfServers = self.get_all_servers([], self, 0)
@@ -49,7 +56,7 @@ class Node:
         for server in listOfServers:
             for k in range(8):
                 check_val = server.id + 2**k
-                server.fingerTable.set(k, self.find_node_with_key(listOfServers, check_val))
+                server.fingerTable.set(k, self.find_node_with_key(check_val))
 
     def find(self, key):
         pass
@@ -57,35 +64,8 @@ class Node:
     def insert(self, key, value):
         if value:
             value = int(value)
-        listOfServers = self.get_all_servers([], self, 0)
-        listOfServers.sort(key = lambda x: x.id)
-        dest_node = self.find_node_with_key(listOfServers, key)
+        dest_node = self.find_node_with_key(key)
         dest_node.localKeys[key] = value
-
-    # def insert_search_fingerTable(self, key, value):
-    #     if key == self.id:
-    #         self.insert(key, value)
-    #     if key < self.id:
-    #         offset = 256 - self.id + key
-    #     else:
-    #         offset = key - self.id
-    #     two_power_count = -1
-    #     while offset:
-    #         offset = offset//2
-    #         two_power_count += 1
-    #     key_node = self.fingerTable.get(two_power_count)
-    #     if key_node.predecessor.id < key:
-    #         if key_node.successor.id > key:
-    #             key_node.successor.insert(key, value)
-    #         else:
-    #             key_node.insert(key, value)
-    #     else:
-    #         key_node.insert_search_fingerTable(key, value)
-    
-    # def insert(self, key, value):
-    #     if value:
-    #         value = int(value)
-    #     self.localKeys[key] = value
 
     def migrateKeys(self, successor):
         totalKeys = successor.localKeys

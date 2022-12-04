@@ -2,7 +2,7 @@ class FingerTable:
 
     def __init__(self, node):
         self.node = node
-        self.fingerTable = [None]*8
+        self.fingerTable = [node]*8
 
     def set(self, index, successor):
         self.fingerTable[index] = successor
