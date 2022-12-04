@@ -21,3 +21,6 @@ def leaveNode(node):
 def lookupall(node):
     node.lookupall(node, 0)
     print()
+
+def find(node, key):
+    node.find(int(key))

@@ -28,13 +28,11 @@ class Node:
     def find_node_with_key(self, key):
         if key == self.id:
             return self
-        elif self.predecessor == self == self.successor:
+        elif (self.predecessor == self == self.successor) or (self.predecessor.id < key < self.id):
             return self
-        elif (self.predecessor.id < key < self.id) or (self.predecessor.id > self.id and key < self.id):
-            return self
-        elif (self.predecessor.id > self.id and key > self.predecessor.id):
-            if self.predecessor == self.successor:
-                return self.successor
+        elif (self.predecessor.id > self.id and key > self.predecessor.id)  or (self.predecessor.id > self.id and key < self.id):
+            # if self.predecessor == self.successor:
+            #     return self.successor
             return self
         if key < self.id:
             offset = 256 - self.id + key
@@ -49,6 +47,22 @@ class Node:
             return key_node.predecessor
         else:
             return key_node.find_node_with_key(key)
+        
+    def find_bsearch_node(self, listOfServers, key):
+        key = key % 256
+        if key > listOfServers[-1].id:
+            return listOfServers[0]
+        start = 0
+        end = len(listOfServers)
+        while (start<=end):
+            mid = (start+end)//2
+            if key == listOfServers[mid].id:
+                return listOfServers[mid]
+            elif key < listOfServers[mid].id:
+                end = mid-1
+            elif key>listOfServers[mid].id:
+                start = mid+1
+        return listOfServers[start]
     
     def updateFingerTable(self):
         listOfServers = self.get_all_servers([], self, 0)
@@ -56,10 +70,7 @@ class Node:
         for server in listOfServers:
             for k in range(8):
                 check_val = server.id + 2**k
-                server.fingerTable.set(k, self.find_node_with_key(check_val))
-
-    def find(self, key):
-        pass
+                server.fingerTable.set(k, self.find_bsearch_node(listOfServers, check_val))
 
     def insert(self, key, value):
         if value:
@@ -70,16 +81,18 @@ class Node:
     def migrateKeys(self, successor):
         totalKeys = successor.localKeys
         keysToBeDeleted = []
+        flag = False
         for key, value in totalKeys.items():
             if key <= self.id:
+                flag = True
                 print("migrate key {0} from node {1} to node {2}".format(
                     str(key), str(successor.id), str(self.id)))
                 self.localKeys[key] = value
                 keysToBeDeleted.append(key)
         for key in keysToBeDeleted:
             successor.remove(key)
-        print()
-                
+        if flag:
+            print()
 
     def prettyPrint(self):
         print("----------Node id: {}----------".format(str(self.id)))
@@ -95,7 +108,7 @@ class Node:
         for key, value in self.localKeys.items():
             if key <= self.id:
                 print("migrate key {0} from node {1} to node {2}".format(
-                    str(key), str(self.successor.id), str(self.id)))
+                    str(key), str(self.id), str(self.successor.id)))
                 self.successor.localKeys[key] = value
         print()
         self.successor.updateFingerTable()
@@ -116,3 +129,8 @@ class Node:
                 value = str(value)
             ))
         self.successor.lookupall(origNode, count+1)
+    
+    def find(self, key):
+        dest_node = self.find_node_with_key(key)
+        val = dest_node.localKeys[key]
+        print("value for key {0} is {1}".format(key, val))
