@@ -24,3 +24,6 @@ def lookupall(node):
 
 def find(node, key):
     node.find(int(key))
+
+def remove(node, key):
+    node.findAndRemove(int(key))

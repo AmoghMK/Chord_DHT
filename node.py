@@ -25,15 +25,28 @@ class Node:
         self.successor.get_all_servers(listOfServers, origNode, count+1)
         return listOfServers
 
-    def find_node_with_key(self, key):
+    def check(self, key, key_flag):
         if key == self.id:
             return self
-        elif (self.predecessor == self == self.successor) or (self.predecessor.id < key < self.id):
+        if (self.predecessor == self == self.successor):
+            if key_flag:
+                return self.predecessor
             return self
-        elif (self.predecessor.id > self.id and key > self.predecessor.id)  or (self.predecessor.id > self.id and key < self.id):
-            # if self.predecessor == self.successor:
-            #     return self.successor
+        if (self.predecessor.id < key < self.id):
             return self
+        if (self.predecessor.id > self.id):
+            if (key > self.predecessor.id):
+                return self
+            if (key < self.predecessor.id and key < self.id):
+                return self
+        if (self.predecessor.id > self.id and key < self.id and key > self.predecessor.id):
+            return self
+
+    def find_node_with_key(self, key, key_flag=False):
+        node = self.check(key, key_flag)
+        if node:
+            return node
+        
         if key < self.id:
             offset = 256 - self.id + key
         else:
@@ -43,10 +56,15 @@ class Node:
             offset = offset//2
             two_power_count += 1
         key_node = self.fingerTable.get(two_power_count)
+
+        node = key_node.check(key, key_flag)
+        if node:
+            return node
+        
         if key_node.predecessor.id > key and key_node.predecessor == self:
             return key_node.predecessor
         else:
-            return key_node.find_node_with_key(key)
+            return key_node.find_node_with_key(key, key_flag)
         
     def find_bsearch_node(self, listOfServers, key):
         key = key % 256
@@ -75,7 +93,7 @@ class Node:
     def insert(self, key, value):
         if value:
             value = int(value)
-        dest_node = self.find_node_with_key(key)
+        dest_node = self.find_node_with_key(key, True)
         dest_node.localKeys[key] = value
 
     def migrateKeys(self, successor):
@@ -83,7 +101,14 @@ class Node:
         keysToBeDeleted = []
         flag = False
         for key, value in totalKeys.items():
-            if key <= self.id:
+            migrate = False
+            if (key <= self.id < self.successor.id):
+                migrate = True
+            elif (self.id > self.successor.id and key > self.successor.id and key < self.id):
+                migrate = True
+            elif (self.id < self.successor.id and key > self.successor.id):
+                migrate = True
+            if migrate:
                 flag = True
                 print("migrate key {0} from node {1} to node {2}".format(
                     str(key), str(successor.id), str(self.id)))
@@ -98,6 +123,12 @@ class Node:
         print("----------Node id: {}----------".format(str(self.id)))
         print(self.localKeys)
         print()
+
+    def findAndRemove(self, key):
+        dest_node = self.find_node_with_key(key, True)
+        print (dest_node.id)
+        print("Removing key {0} with value {1}".format(key, dest_node.localKeys[key]))
+        del dest_node.localKeys[key]
 
     def remove(self, key):
         del self.localKeys[key]
@@ -131,6 +162,6 @@ class Node:
         self.successor.lookupall(origNode, count+1)
     
     def find(self, key):
-        dest_node = self.find_node_with_key(key)
+        dest_node = self.find_node_with_key(key, True)
         val = dest_node.localKeys[key]
         print("value for key {0} is {1}".format(key, val))

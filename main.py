@@ -7,9 +7,6 @@ node_name_map = {}
 with open(sys.argv[-1], 'r') as f:
     input_txt = f.read()
 
-# with open('test.txt', 'r') as f:
-#     input_txt = f.read()
-
 inputs = input_txt.split('\n')
 
 for input in inputs:
@@ -49,5 +46,9 @@ for input in inputs:
     elif command == "find":
         node = node_name_map[params[0]]
         find(node, params[1])
+
+    elif command == "remove":
+        node = node = node_name_map[params[0]]
+        remove(node, params[1])
 
 exit()
