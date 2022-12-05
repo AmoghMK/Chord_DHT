@@ -1,3 +1,6 @@
+# fingerTable class for a node which holds pointer to successor for node_id.
+# for k = 1 to 8, successor for value (node_id + 2**k)mod(256)
+
 class FingerTable:
 
     def __init__(self, node):

@@ -1,3 +1,5 @@
+# interface file for executing commands using methods in node objects.
+
 from node import Node
 
 def addNode(id):
